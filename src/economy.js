@@ -36,6 +36,7 @@ function getWorkforceQuality() {
       case 'design':  designQ += q;  designCount++;  deliveryEfficiencySum += eff; break;
       case 'seo':     seoQ += q;     seoCount++;     deliveryEfficiencySum += eff; break;
       case 'sales':   salesF += q;   salesCount++; salesEfficiencySum += eff; break;
+      case 'shopfront': salesF += q; salesCount++; salesEfficiencySum += eff; deliveryEfficiencySum += eff; break;
       default: deliveryEfficiencySum += eff; break;
     }
   }
@@ -58,7 +59,8 @@ export function getMarketingBudget() {
     G.agents.some(a => a.role.office === 'marketing');
   const hasCampaignOps = hasMarketing ||
     countRoomsByType('content') > 0 ||
-    countRoomsByType('sales') > 0;
+    countRoomsByType('sales') > 0 ||
+    countRoomsByType('shopfront') > 0;
   if (!hasCampaignOps) return 0;
   const spend = G.equipmentConfig.marketing_spend;
   const hqPreset = spend === 'lean' ? 80 : spend === 'aggressive' ? 400 : 200;
@@ -158,8 +160,11 @@ export function calculateFunnel() {
   const pricingCloseMult = pricingMode === 'budget' ? 1.3 : pricingMode === 'premium' ? 0.7 : 1.0;
   const followupCloseMult = followupMode === 'relaxed' ? 0.8 : followupMode === 'aggressive' ? 1.3 : 1.0;
 
+  // Retail walk-in close rate is much higher than B2B (every other customer buys)
+  const retailCloseBoost = companyDef.bonuses?.retailCloseBoost || 1.0;
+
   const closeRate = ECONOMY.base_close_rate * salesFactor * meetingFactor * reputationFactor
-    * pricingCloseMult * followupCloseMult;
+    * pricingCloseMult * followupCloseMult * retailCloseBoost;
   const potentialClients = leads * closeRate;
 
   // Sales throughput caps how many clients can be processed.
@@ -435,10 +440,10 @@ export function getWarehouseCapacityBonus() {
   return countRoomsByType('warehouse') > 0 ? 0.20 * diversificationPenalty('warehouse') : 0;
 }
 
-// Check if Sales office exists with agents
+// Check if Sales office (or Shopfront for retail) exists with agents
 export function hasSalesCapacity() {
-  return countRoomsByType('sales') > 0 &&
-    G.agents.some(a => a.role.office === 'sales');
+  return (countRoomsByType('sales') > 0 && G.agents.some(a => a.role.office === 'sales')) ||
+    (countRoomsByType('shopfront') > 0 && G.agents.some(a => a.role.office === 'shopfront'));
 }
 
 // Check if Support office is staffed

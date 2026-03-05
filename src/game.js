@@ -63,7 +63,7 @@ export const G = {
   completedLog: [],
   particles: [],
   visitors: [],
-  visitorStats: { totalServed: 0, totalAngry: 0, avgSatisfaction: 0.5 },
+  visitorStats: { totalServed: 0, totalAngry: 0, avgSatisfaction: 0.5, dailyPurchases: 0, dailyPurchaseRevenue: 0 },
 
   // Project spawning
   spawnTimer: 0,
@@ -251,7 +251,7 @@ export const G = {
     this.completedLog = [];
     this.particles = [];
     this.visitors = [];
-    this.visitorStats = { totalServed: 0, totalAngry: 0, avgSatisfaction: 0.5 };
+    this.visitorStats = { totalServed: 0, totalAngry: 0, avgSatisfaction: 0.5, dailyPurchases: 0, dailyPurchaseRevenue: 0 };
     this.spawnTimer = 0;
     this.gameSpeed = 1;
     this.gameTick = 0;

@@ -345,6 +345,13 @@ function processDayCycle(dt) {
 
     G.dayRevenueAcc = 0;
 
+    // Fashion retail: update deals metric from real customer purchases
+    if (G.companyType === 'fashion_retail') {
+      G.metrics.clients = G.visitorStats.dailyPurchases;
+    }
+    G.visitorStats.dailyPurchases = 0;
+    G.visitorStats.dailyPurchaseRevenue = 0;
+
     // Day counter for agents + alignment decay
     const teamSize = G.agents.filter(a => a.roleKey !== 'ceo').length;
     for (const a of G.agents) {
@@ -1170,10 +1177,14 @@ export function startTeamBuilding() {
 
 // ─── Visitors ───────────────────────────────────────────────
 const PATIENCE_DRAIN = { client: 0.0003, candidate: 0.0002, walkin: 0.0004, customer: 0.0003 };
-const MAX_VISITORS = 6;
+const BASE_MAX_VISITORS = 6;
+function getMaxVisitors() {
+  const shopfronts = countRoomsByType('shopfront');
+  return shopfronts > 0 ? BASE_MAX_VISITORS + shopfronts * 3 : BASE_MAX_VISITORS;
+}
 
 function spawnVisitor(type, targetRoom) {
-  if (G.visitors.length >= MAX_VISITORS) return null;
+  if (G.visitors.length >= getMaxVisitors()) return null;
   const v = new Visitor(type, targetRoom);
   if (!v.spawnAtLobbyEntrance()) return null;
   G.visitors.push(v);
@@ -1251,10 +1262,14 @@ function tickVisitors(dt) {
 
   // 6. Spawn new visitors from events
   const walkinThreshold = findRoomByType('shopfront') ? 15 : 30;
-  if (G.reputation > walkinThreshold && G.visitors.length < MAX_VISITORS) {
+  if (G.reputation > walkinThreshold && G.visitors.length < getMaxVisitors()) {
     const companyDef = COMPANY_TYPES[G.companyType] || {};
     const walkinMult = companyDef.bonuses?.walkinMultiplier || 1.0;
-    const walkinChance = (G.reputation - walkinThreshold) / (100 - walkinThreshold) * (1 / 600) * walkinMult;
+    // Shop assistants increase walk-in customer throughput
+    const shopStaffMult = findRoomByType('shopfront')
+      ? Math.max(1, G.agents.filter(a => a.role.office === 'shopfront').length)
+      : 1;
+    const walkinChance = (G.reputation - walkinThreshold) / (100 - walkinThreshold) * (1 / 600) * walkinMult * shopStaffMult;
     if (Math.random() < walkinChance * dt) {
       const hasShopfront = !!findRoomByType('shopfront');
       spawnVisitor(hasShopfront ? 'customer' : 'walkin', hasShopfront ? 'shopfront' : null);
@@ -1273,6 +1288,8 @@ function applyVisitorOutcome(v) {
       const saleAmount = Math.round(80 + Math.random() * 120 + (verySatisfied ? 100 : 0));
       G.money += saleAmount;
       G.totalRevenue += saleAmount;
+      G.visitorStats.dailyPurchases++;
+      G.visitorStats.dailyPurchaseRevenue += saleAmount;
       G.reputation = Math.min(100, G.reputation + (verySatisfied ? 1 : 0.3));
       // Green money particles at visitor position
       const s = toScreen(v.x, v.y);
@@ -1322,7 +1339,7 @@ function applyVisitorOutcome(v) {
 
 // Called from spawnProjects when a new project is created
 export function spawnClientVisitor() {
-  if (G.visitors.length >= MAX_VISITORS) return;
+  if (G.visitors.length >= getMaxVisitors()) return;
   const hasShopfront = !!findRoomByType('shopfront');
   const hasSalesRoom = !!findRoomByType('sales');
   spawnVisitor('client', hasShopfront ? 'shopfront' : hasSalesRoom ? 'sales' : 'lobby');
@@ -1330,7 +1347,7 @@ export function spawnClientVisitor() {
 
 // Called when HR hiring round project is spawned
 export function spawnCandidateVisitor() {
-  if (G.visitors.length >= MAX_VISITORS) return;
+  if (G.visitors.length >= getMaxVisitors()) return;
   spawnVisitor('candidate', 'hr');
 }
 

@@ -17,7 +17,7 @@ function getNoProjectsDiagnosis() {
   }
 
   const hasTrafficSource = getRoomInstances().some(r =>
-    ['content', 'sales', 'marketing', 'seo'].includes(r.typeKey)
+    ['content', 'sales', 'marketing', 'seo', 'shopfront'].includes(r.typeKey)
   );
   if (!hasTrafficSource) {
     return 'No active projects — build Marketing HQ, Content Studio, or Sales Office.';
@@ -291,7 +291,7 @@ export function updateAgentPanel() {
         const stars = h.quality > 0.7 ? '⭐' : h.quality > 0.4 ? '✓' : '⚠';
         return `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.03)">
           <span>${stars} ${h.name}</span>
-          <span style="color:var(--success)">+$${h.pay.toLocaleString()}</span>
+          <span style="color:${h.pay < 0 ? '#e05050' : 'var(--success)'}">${h.pay < 0 ? '-$' + Math.abs(h.pay).toLocaleString() : '+$' + h.pay.toLocaleString()}</span>
         </div>`;
       }).join('');
     }
@@ -351,7 +351,7 @@ export function updateUI() {
     const daysLeft = p.deadlineRemaining.toFixed(1);
     const deadlineColor = urgent ? '#e05050' : 'var(--text-faint)';
     return `<div class="project-card"${borderStyle}>
-      <div class="row"><span class="title">${p.template.icon} ${p.name}</span><span class="pay">$${p.pay.toLocaleString()}</span></div>
+      <div class="row"><span class="title">${p.template.icon} ${p.name}</span><span class="pay" style="color:${p.pay < 0 ? '#e05050' : ''}">${p.pay < 0 ? '-$' + Math.abs(p.pay).toLocaleString() : '$' + p.pay.toLocaleString()}</span></div>
       <div style="margin-top:5px;display:flex;align-items:center;gap:8px">
         ${renderProjectSourceTag(p.source)}
         <span style="font-size:10px;color:${deadlineColor}">${urgent ? '⚠️' : '⏰'} ${daysLeft}d left</span>
@@ -370,7 +370,7 @@ export function updateUI() {
       <div class="completed-row">
         <span style="color:${qualityColor}">${qualityIcon}</span>
         <span class="completed-name">${c.name}</span>
-        <span class="completed-pay">+$${c.pay.toLocaleString()}</span>
+        <span class="completed-pay" style="color:${c.pay < 0 ? '#e05050' : ''}">${c.pay < 0 ? '-$' + Math.abs(c.pay).toLocaleString() : '+$' + c.pay.toLocaleString()}</span>
       </div>
     </div>`;
   }).join('') || '<span style="color:var(--text-faint)">None yet</span>';

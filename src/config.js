@@ -1381,7 +1381,7 @@ export const COMPANY_TYPES = {
     tagline: 'Style, sell & grow a fashion empire',
     available: ['shopfront','design','warehouse','sales','marketing','pr','support','hr','finance','legal','it','content'],
     startUnlocked: ['lobby','shopfront','warehouse'],
-    bonuses: { walkinMultiplier: 3.0, organicMultiplier: 1.0 },
+    bonuses: { walkinMultiplier: 3.0, organicMultiplier: 1.0, retailCloseBoost: 3.0 },
   },
 };
 
