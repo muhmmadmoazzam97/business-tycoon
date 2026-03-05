@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'business-tycoon-v2';
+const CACHE_VERSION = 'business-tycoon-v3';
 
 const PRECACHE_URLS = [
   './',
@@ -74,6 +74,12 @@ self.addEventListener('activate', (event) => {
           .map((key) => caches.delete(key))
       ))
       .then(() => self.clients.claim())
+      .then(() => {
+        // Tell all open tabs to reload with the new version
+        self.clients.matchAll({ type: 'window' }).then((clients) => {
+          clients.forEach((client) => client.postMessage({ type: 'SW_UPDATED' }));
+        });
+      })
   );
 });
 
