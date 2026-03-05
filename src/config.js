@@ -69,7 +69,7 @@ export const ALIGNMENT = {
   new_hire_max: 0.30,       // max starting alignment
   decay_per_day: 0.008,     // daily natural decay (need regular meetings)
   decay_team_size_factor: 0.002, // extra decay per team member (bigger teams drift faster)
-  standup_boost: 0.08,      // weekly standup alignment gain
+  standup_boost: 0.12,      // biweekly standup alignment gain
   team_building_boost: 0.15, // CEO team building alignment gain
   team_building_ticks: 180,  // how long team building takes (game ticks)
   meeting_efficiency_penalty: 0.0, // agents in meetings produce 0 work

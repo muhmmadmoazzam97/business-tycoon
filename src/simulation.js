@@ -568,11 +568,11 @@ function processWeek() {
     }
   }
 
-  // Weekly standup: if meeting room exists, everyone gathers physically
+  // Biweekly standup: if meeting room exists, everyone gathers physically
   const hasMeeting = findRoomByType('meeting');
-  if (hasMeeting && !G.standupActive && !G.teamBuildingActive) {
+  if (hasMeeting && G.week % 2 === 0 && !G.standupActive && !G.teamBuildingActive) {
     startStandup(hasMeeting);
-  } else if (hasMeeting && !G.standupActive) {
+  } else if (hasMeeting && G.week % 2 === 0 && !G.standupActive) {
     // Team building active, just give the boost silently
     for (const a of G.agents) a.onMeetingBoost();
   }
@@ -938,7 +938,7 @@ function updateStandup(dt) {
     // Wait for everyone to arrive (or timeout)
     G.standupTimer += dt;
     const allArrived = attending.every(a => a.state !== 'walking');
-    if (allArrived || G.standupTimer > 300) {
+    if (allArrived || G.standupTimer > 150) {
       // Arrange in circle around center
       G.standupPhase = 'huddle';
       G.standupTimer = 0;
@@ -967,13 +967,13 @@ function updateStandup(dt) {
       a.bobY = Math.sin(a.frame * 0.06 + a.id) * 1;
       a.state = 'idle'; // keep them in place
     }
-    if (G.standupTimer > 120) {
+    if (G.standupTimer > 60) {
       // Transition to cheer
       G.standupPhase = 'cheer';
       G.standupTimer = 0;
       for (const a of attending) {
         const cheer = STANDUP_CHEERS[Math.floor(Math.random() * STANDUP_CHEERS.length)];
-        a.say(cheer, 80);
+        a.say(cheer, 50);
       }
     }
   } else if (G.standupPhase === 'cheer') {
@@ -983,7 +983,7 @@ function updateStandup(dt) {
       // Excited jumping animation
       a.bobY = -Math.abs(Math.sin((G.standupTimer + a.id * 5) * 0.15)) * 6;
     }
-    if (G.standupTimer > 60) {
+    if (G.standupTimer > 30) {
       endStandup();
     }
   }
