@@ -903,10 +903,16 @@ function startStandup(meetingRoom) {
   G.standupPhase = 'gather';
   G.standupTimer = 0;
 
-  // Center of meeting room
-  const cx = meetingRoom.x + Math.floor(meetingRoom.w / 2);
-  const cy = meetingRoom.y + Math.floor(meetingRoom.h / 2);
-  G.standupCenter = { x: cx, y: cy };
+  // Use all meeting rooms — send each agent to the closest one
+  const allMeetingRooms = findAllRoomsByType('meeting');
+  const roomCenters = allMeetingRooms.map(r => ({
+    room: r,
+    cx: r.x + Math.floor(r.w / 2),
+    cy: r.y + Math.floor(r.h / 2),
+  }));
+
+  // Store first room center for face-direction during huddle
+  G.standupCenter = { x: roomCenters[0].cx, y: roomCenters[0].cy };
 
   // Send available agents — those serving visitors stay behind
   const allAgents = G.ceo ? [G.ceo, ...G.agents.filter(a => a !== G.ceo)] : [...G.agents];
@@ -919,10 +925,18 @@ function startStandup(meetingRoom) {
       a.task.assignedAgents = a.task.assignedAgents.filter(w => w !== a);
       a.task = null;
     }
+    // Find closest meeting room
+    let closest = allMeetingRooms[0];
+    let bestDist = Infinity;
+    for (const rc of roomCenters) {
+      const d = Math.abs(a.x - rc.cx) + Math.abs(a.y - rc.cy);
+      if (d < bestDist) { bestDist = d; closest = rc.room; }
+    }
+    a._meetingRoom = closest; // remember which room for face-direction
     a.state = 'walking';
-    a.moveToRoom(meetingRoom.id);
+    a.moveToRoom(closest.id);
   }
-  showToast('🤝 Weekly standup! Everyone to the meeting room.');
+  showToast('🤝 Standup! Everyone to the meeting room.');
 }
 
 function updateStandup(dt) {
@@ -940,13 +954,14 @@ function updateStandup(dt) {
       // Transition to huddle — agents stay where they are (no teleporting)
       G.standupPhase = 'huddle';
       G.standupTimer = 0;
-      const cx = G.standupCenter.x;
-      const cy = G.standupCenter.y;
       for (const a of attending) {
         if (a.state === 'walking') a.path = []; // stop walking if timed out
         a.state = 'idle';
         a.bobY = 0;
-        // Face toward meeting center
+        // Face toward their meeting room's center
+        const mr = a._meetingRoom;
+        const cx = mr ? mr.x + Math.floor(mr.w / 2) : G.standupCenter.x;
+        const cy = mr ? mr.y + Math.floor(mr.h / 2) : G.standupCenter.y;
         const dx = cx - a.x, dy = cy - a.y;
         if (Math.abs(dx) > Math.abs(dy)) a.dir = dx > 0 ? 1 : 3;
         else a.dir = dy > 0 ? 2 : 0;
@@ -988,6 +1003,7 @@ function endStandup() {
       a.inMeeting = false;
       a.bobY = 0;
       a.state = 'idle';
+      a._meetingRoom = null;
       // Walk back to their office
       const rooms = getRoomInstances();
       const home = rooms.find(r => r.typeKey === a.role.office);
