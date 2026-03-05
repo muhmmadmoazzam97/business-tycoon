@@ -32,7 +32,7 @@ import {
 import { showLoanModal } from './ui/loan.js';
 import { rollCandidatesForRole, getCandidatesForRole, hasHRStaff } from './recruitment.js';
 import { tryFireEvent, tickEventBuffs, tickDailyEventBuffs, isOfficeFlooded } from './events.js';
-import { Visitor } from './visitor.js';
+import { Visitor, isRoomOccupiedByVisitor } from './visitor.js';
 
 // ─── Task Assignment ───────────────────────────────────────
 function assignTasks() {
@@ -49,13 +49,13 @@ function assignTasks() {
       maxWorkers = Math.max(maxWorkers, 2);
     }
     let idleAgents = G.agents
-      .filter(a => a.role.office === targetOffice && a.state === 'idle' && !a.task && a.energy > 0.2 && !a.inMeeting)
+      .filter(a => a.role.office === targetOffice && a.state === 'idle' && !a.task && a.energy > 0.2 && !a.inMeeting && !a._servingVisitor)
       .sort((a, b) => b.energy - a.energy) // prefer well-rested agents
       .slice(0, maxWorkers);
 
     // CEO can fill any role when no specialists are available
     if (idleAgents.length === 0) {
-      const ceo = G.agents.find(a => a.roleKey === 'ceo' && a.state === 'idle' && !a.task && a.energy > 0.2 && !a.inMeeting);
+      const ceo = G.agents.find(a => a.roleKey === 'ceo' && a.state === 'idle' && !a.task && a.energy > 0.2 && !a.inMeeting && !a._servingVisitor);
       if (ceo) idleAgents = [ceo];
     }
 
@@ -949,50 +949,60 @@ function spawnVisitor(type, targetRoom) {
 }
 
 function tickVisitors(dt) {
-  // 1. Update all visitors
+  // 1. Update all visitors — pass visitors array for queuing checks
   for (const v of G.visitors) {
-    // Patience drain while waiting
-    if (v.state === 'waiting') {
-      v.patience -= (PATIENCE_DRAIN[v.type] || 0.0003) * dt;
+    // Patience drain in waiting-like states
+    const waitState = v.state === 'seated_waiting' || v.state === 'agent_arriving' || v.state === 'queuing_outside';
+    if (waitState) {
+      const rate = v.state === 'queuing_outside' ? 0.5 : 1.0;
+      v.patience -= (PATIENCE_DRAIN[v.type] || 0.0003) * dt * rate;
     }
-    v.update(dt);
+    v.update(dt, G.visitors);
   }
 
-  // 2. Service matching — idle agent in same room serves waiting visitor
+  // 2. Agent dispatch — find idle agents to send to visitors who need them
   for (const v of G.visitors) {
-    if (v.state !== 'waiting' || v.assignedAgent) continue;
+    if (!v.needsAgent || v.assignedAgent) continue;
+    if (v.state !== 'seated_waiting') continue;
 
     let matchingAgent = null;
-    if (v.type === 'client') {
-      // Sales agent in sales room
+    const role = v.requestedRole;
+
+    if (role) {
+      // Find idle agent of the right role anywhere in the office
       matchingAgent = G.agents.find(a =>
-        a.role.office === 'sales' && a.state === 'idle' && !a.task && !a.inMeeting &&
-        v.targetRoom && isAgentInRoom(a, v.targetRoom)
+        a.role.office === role && a.state === 'idle' && !a.task && !a.inMeeting && !a._servingVisitor
       );
-    } else if (v.type === 'candidate') {
-      // HR agent in HR room
+    }
+    if (!matchingAgent) {
+      // Fallback: any idle agent, or CEO
       matchingAgent = G.agents.find(a =>
-        a.role.office === 'hr' && a.state === 'idle' && !a.task && !a.inMeeting &&
-        v.targetRoom && isAgentInRoom(a, v.targetRoom)
-      );
-    } else {
-      // Walk-in: any idle agent nearby
-      matchingAgent = G.agents.find(a =>
-        a.state === 'idle' && !a.task && !a.inMeeting &&
-        Math.abs(a.x - v.x) < 3 && Math.abs(a.y - v.y) < 3
+        a.state === 'idle' && !a.task && !a.inMeeting && !a._servingVisitor
       );
     }
 
     if (matchingAgent) {
-      v.startService(matchingAgent);
+      // Dispatch agent to visitor
+      matchingAgent._servingVisitor = v;
+      v.assignedAgent = matchingAgent;
+      v.needsAgent = false;
+      v.state = 'agent_arriving';
+      v.stateTimer = 0;
+
+      // Send agent walking to visitor's room or position
+      if (v.targetRoom) {
+        matchingAgent.moveToRoom(v.targetRoom.id);
+      } else {
+        matchingAgent.moveTo(Math.round(v.x), Math.round(v.y));
+      }
     }
   }
 
-  // 3. Satisfaction modifiers from office amenities
+  // 3. Satisfaction modifiers from office amenities (on first tick of seated_waiting)
   const hasBreakroom = !!findRoomByType('breakroom');
   const hasDesign = !!findRoomByType('design');
   for (const v of G.visitors) {
-    if (v.state === 'waiting' && v.stateTimer === 0) {
+    if (v.state === 'seated_waiting' && v.stateTimer === 0) {
       if (hasBreakroom) v.satisfaction += 0.05;
       if (hasDesign) v.satisfaction += 0.05;
     }
@@ -1008,20 +1018,12 @@ function tickVisitors(dt) {
   G.visitors = G.visitors.filter(v => v.state !== 'gone');
 
   // 6. Spawn new visitors from events
-  // Client spawns are handled by spawnClientVisitor (called from spawnProjects)
-  // Walk-ins: random chance based on reputation
   if (G.reputation > 30 && G.visitors.length < MAX_VISITORS) {
-    // ~1 per 600 ticks at rep 50, scales with reputation
     const walkinChance = (G.reputation - 30) / 70 * (1 / 600);
     if (Math.random() < walkinChance * dt) {
       spawnVisitor('walkin', null);
     }
   }
-}
-
-function isAgentInRoom(agent, room) {
-  return agent.x >= room.x && agent.x < room.x + room.w &&
-    agent.y >= room.y && agent.y < room.y + room.h;
 }
 
 function applyVisitorOutcome(v) {

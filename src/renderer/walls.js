@@ -103,12 +103,15 @@ function getEdgeDir(edgeName) {
 }
 
 function getDoorAnchor(edgeName, s, hw, hh) {
+  // Anchor at center of the tile's wall section (where agents cross the wall),
+  // not the diamond vertex (which is offset along the wall by half a tile)
+  const hw2 = hw / 2, hh2 = hh / 2;
   switch (edgeName) {
-    case 'top': return { x: s.x, y: s.y - hh };
-    case 'bottom': return { x: s.x, y: s.y + hh };
-    case 'left': return { x: s.x - hw, y: s.y };
-    case 'right': return { x: s.x + hw, y: s.y };
-    default: return { x: s.x, y: s.y - hh };
+    case 'top':    return { x: s.x + hw2, y: s.y - hh2 };
+    case 'bottom': return { x: s.x - hw2, y: s.y + hh2 };
+    case 'left':   return { x: s.x - hw2, y: s.y - hh2 };
+    case 'right':  return { x: s.x + hw2, y: s.y + hh2 };
+    default:       return { x: s.x + hw2, y: s.y - hh2 };
   }
 }
 

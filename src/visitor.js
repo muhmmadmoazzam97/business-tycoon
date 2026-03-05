@@ -4,7 +4,10 @@
 
 import { findPath } from './pathfinding.js';
 import { getWalkable, getRoomInstances, findRoomByType } from './map.js';
-import { MAP_W, MAP_H } from './config.js';
+import {
+  MAP_W, MAP_H,
+  VISITOR_ARRIVAL_SPEECH, VISITOR_QUEUE_SPEECH, VISITOR_DIALOGUES,
+} from './config.js';
 
 let nextVisitorId = 0;
 
@@ -12,6 +15,35 @@ function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 const SKIN_TONES = ['#f5d0a9','#e8c090','#d4a878','#c09060','#a87848'];
 const HAIR_COLORS = ['#2a1a0a','#4a2a10','#7a5a30','#1a1020','#a07040'];
+
+// ─── Chair Claiming ─────────────────────────────────────
+const _claimedChairs = new Set();
+
+export function findAvailableChair(room) {
+  if (!room || !room.furnitureList) return null;
+  const chairs = room.furnitureList.filter(f => f.type === 'chair' && !_claimedChairs.has(f));
+  if (chairs.length === 0) return null;
+  return chairs[Math.floor(Math.random() * chairs.length)];
+}
+
+function claimChair(chair) {
+  if (chair) _claimedChairs.add(chair);
+}
+
+function releaseChair(chair) {
+  if (chair) _claimedChairs.delete(chair);
+}
+
+// ─── Room Occupancy Check ───────────────────────────────
+const _occupiedStates = new Set([
+  'entering_room', 'seated_waiting', 'agent_arriving', 'in_conversation',
+]);
+
+export function isRoomOccupiedByVisitor(room, visitors) {
+  return visitors.some(v =>
+    v.targetRoom === room && _occupiedStates.has(v.state)
+  );
+}
 
 export class Visitor {
   constructor(type, targetRoomType) {
@@ -30,15 +62,31 @@ export class Visitor {
     this.bobY = 0;
 
     // State machine
-    this.state = 'entering'; // entering → walking → waiting → being_served → leaving → gone
+    // entering → walking_to_door → [queuing_outside] → entering_room → seated_waiting
+    // → agent_arriving → in_conversation → wrapping_up → leaving → gone
+    this.state = 'entering';
     this.stateTimer = 0;
 
     // Gameplay
-    this.patience = 1.0; // drains while waiting
+    this.patience = 1.0;
     this.satisfaction = 0.5;
     this.assignedAgent = null;
     this.targetRoom = null;
     this.serviceTimer = 0;
+
+    // Chair system
+    this.claimedChair = null;
+    this.seated = false;
+
+    // Agent dispatch
+    this.needsAgent = false;
+    this.requestedRole = null; // 'sales' | 'hr' | null
+
+    // Dialogue system
+    this.conversationStep = 0;
+    this.conversationTimer = 0;
+    this._dialogueSeq = null;
+    this._linePause = 0;
 
     // Visual
     this.skinTone = pick(SKIN_TONES);
@@ -68,26 +116,24 @@ export class Visitor {
     return false;
   }
 
-  moveToRoom(roomTypeKey) {
-    const room = findRoomByType(roomTypeKey);
+  _moveToRoomDoor(room) {
     if (!room) return false;
-
-    const walkable = getWalkable();
-    // Try work positions first
-    for (const pos of room.workPositions) {
-      if (walkable[pos.y]?.[pos.x] && this.moveTo(pos.x, pos.y)) {
+    if (room.doors && room.doors.length > 0) {
+      const door = room.doors[0];
+      if (this.moveTo(door.x, door.y)) {
         this.targetRoom = room;
         return true;
       }
     }
-    // Fallback: near center
+    // Fallback: room edge
+    const walkable = getWalkable();
     const cx = room.x + Math.floor(room.w / 2);
     const cy = room.y + Math.floor(room.h / 2);
     for (let r = 0; r <= 3; r++) {
       for (let dy = -r; dy <= r; dy++) {
         for (let dx = -r; dx <= r; dx++) {
           const tx = cx + dx, ty = cy + dy;
-          if (tx >= 0 && tx < MAP_W && ty >= 0 && ty < MAP_H && walkable[ty][tx]) {
+          if (tx >= 0 && tx < MAP_W && ty >= 0 && ty < MAP_H && walkable[ty]?.[tx]) {
             if (this.moveTo(tx, ty)) {
               this.targetRoom = room;
               return true;
@@ -99,15 +145,19 @@ export class Visitor {
     return false;
   }
 
+  moveToRoom(roomTypeKey) {
+    const room = findRoomByType(roomTypeKey);
+    if (!room) return false;
+    return this._moveToRoomDoor(room);
+  }
+
   moveToLobbyEntrance() {
     const lobby = findRoomByType('lobby');
     if (!lobby) return false;
-    // Use the first door as exit point
     if (lobby.doors && lobby.doors.length > 0) {
       const door = lobby.doors[0];
       return this.moveTo(door.x, door.y);
     }
-    // Fallback to lobby center
     return this.moveTo(lobby.x + Math.floor(lobby.w / 2), lobby.y + Math.floor(lobby.h / 2));
   }
 
@@ -125,18 +175,71 @@ export class Visitor {
     return true;
   }
 
-  startService(agent) {
+  _enterRoom() {
+    if (!this.targetRoom) { this.leave(false); return; }
+
+    // Try to claim a chair
+    const chair = findAvailableChair(this.targetRoom);
+    if (chair) {
+      this.claimedChair = chair;
+      claimChair(chair);
+      this.moveTo(chair.x, chair.y);
+    } else {
+      // No chair — use workPosition or room center
+      const room = this.targetRoom;
+      const walkable = getWalkable();
+      let found = false;
+      for (const pos of room.workPositions) {
+        if (walkable[pos.y]?.[pos.x] && this.moveTo(pos.x, pos.y)) { found = true; break; }
+      }
+      if (!found) {
+        const cx = room.x + Math.floor(room.w / 2);
+        const cy = room.y + Math.floor(room.h / 2);
+        for (let r = 0; r <= 2; r++) {
+          for (let dy = -r; dy <= r; dy++) {
+            for (let dx = -r; dx <= r; dx++) {
+              const tx = cx + dx, ty = cy + dy;
+              if (tx >= 0 && tx < MAP_W && ty >= 0 && ty < MAP_H && walkable[ty]?.[tx]) {
+                if (this.moveTo(tx, ty)) { found = true; break; }
+              }
+              if (found) break;
+            }
+            if (found) break;
+          }
+        }
+      }
+    }
+    this.state = 'entering_room';
+  }
+
+  startConversation(agent) {
     this.assignedAgent = agent;
-    this.state = 'being_served';
-    this.serviceTimer = 0;
-    this.satisfaction += 0.15; // greeting bonus
-    // Quick service bonus if patience > 0.7
+    this.state = 'in_conversation';
+    this.conversationStep = 0;
+    this.conversationTimer = 0;
+    this.needsAgent = false;
+    this.satisfaction += 0.15;
     if (this.patience > 0.7) this.satisfaction += 0.2;
-    this.say('Hello! 👋', 80);
+
+    // Pick a dialogue sequence
+    const seqs = VISITOR_DIALOGUES[this.type];
+    this._dialogueSeq = seqs ? pick(seqs) : null;
+    this._linePause = 0;
   }
 
   leave(happy) {
     this.state = 'leaving';
+    // Release chair
+    if (this.claimedChair) {
+      releaseChair(this.claimedChair);
+      this.claimedChair = null;
+    }
+    this.seated = false;
+    this.needsAgent = false;
+    // Clear agent reference
+    if (this.assignedAgent && this.assignedAgent._servingVisitor === this) {
+      this.assignedAgent._servingVisitor = null;
+    }
     this.assignedAgent = null;
     if (happy) {
       this.say(pick(['Thanks! 😊', 'Great! 👍', 'Nice office!', 'Impressed! ⭐']), 120);
@@ -146,7 +249,7 @@ export class Visitor {
     this.moveToLobbyEntrance();
   }
 
-  update(dt) {
+  update(dt, visitors) {
     this.frame += dt;
 
     // Speech countdown
@@ -155,8 +258,10 @@ export class Visitor {
       if (this.speechTimer <= 0) this.speech = null;
     }
 
-    // Bob animation
-    if (this.state === 'walking' || this.state === 'entering') {
+    // Bob animation for walking states
+    const isMoving = this.state === 'entering' || this.state === 'walking_to_door'
+      || this.state === 'entering_room' || this.state === 'leaving' || this.state === 'browsing';
+    if (isMoving) {
       this.bobY = Math.sin(this.frame * 0.15) * 1.5;
     } else {
       this.bobY *= 0.9;
@@ -166,26 +271,71 @@ export class Visitor {
       case 'entering':
         this._tickMovement(dt);
         if (this.path.length === 0 || this.pathIdx >= this.path.length) {
-          this.state = 'walking';
-          this._navigateToTarget();
-        }
-        break;
-
-      case 'walking':
-        this._tickMovement(dt);
-        if (this.path.length === 0 || this.pathIdx >= this.path.length) {
+          this.say(pick(VISITOR_ARRIVAL_SPEECH[this.type] || VISITOR_ARRIVAL_SPEECH.walkin), 80);
           if (this.type === 'walkin') {
             this.state = 'browsing';
             this.stateTimer = 0;
+            this._browseNextRoom();
           } else {
-            this.state = 'waiting';
-            this.stateTimer = 0;
+            this.state = 'walking_to_door';
+            this._navigateToTarget();
           }
         }
         break;
 
-      case 'waiting':
-        // Patience drains
+      case 'walking_to_door':
+        this._tickMovement(dt);
+        if (this.path.length === 0 || this.pathIdx >= this.path.length) {
+          if (!this.targetRoom) {
+            // No target room — wait in lobby
+            this.state = 'seated_waiting';
+            this.needsAgent = true;
+            this.requestedRole = this.type === 'client' ? 'sales' : this.type === 'candidate' ? 'hr' : null;
+            break;
+          }
+          // Check if room is occupied by another visitor
+          if (isRoomOccupiedByVisitor(this.targetRoom, visitors || [])) {
+            this.state = 'queuing_outside';
+            this.stateTimer = 0;
+            this.say(pick(VISITOR_QUEUE_SPEECH[this.type] || VISITOR_QUEUE_SPEECH.walkin), 80);
+          } else {
+            this._enterRoom();
+          }
+        }
+        break;
+
+      case 'queuing_outside':
+        this.stateTimer += dt;
+        // Patience drains at half rate while queuing
+        if (this.patience <= 0) {
+          this.satisfaction -= 0.15;
+          this.leave(false);
+          break;
+        }
+        // Re-check every ~30 ticks
+        if (this.stateTimer >= 30) {
+          this.stateTimer = 0;
+          if (!this.targetRoom || !isRoomOccupiedByVisitor(this.targetRoom, visitors || [])) {
+            this._enterRoom();
+          }
+        }
+        break;
+
+      case 'entering_room':
+        this._tickMovement(dt);
+        if (this.path.length === 0 || this.pathIdx >= this.path.length) {
+          // Arrived at chair/position
+          if (this.claimedChair) {
+            this.seated = true;
+          }
+          this.state = 'seated_waiting';
+          this.stateTimer = 0;
+          this.needsAgent = true;
+          this.requestedRole = this.type === 'client' ? 'sales' : this.type === 'candidate' ? 'hr' : null;
+        }
+        break;
+
+      case 'seated_waiting':
         this.stateTimer += dt;
         if (this.patience <= 0) {
           this.satisfaction -= 0.15;
@@ -193,10 +343,47 @@ export class Visitor {
         }
         break;
 
-      case 'being_served':
-        this.serviceTimer += dt;
-        // Service takes ~200 ticks
-        if (this.serviceTimer >= 200) {
+      case 'agent_arriving':
+        this.stateTimer += dt;
+        // Check if assigned agent arrived in room
+        if (this.assignedAgent) {
+          const a = this.assignedAgent;
+          // Agent broke or got reassigned?
+          if (!a._servingVisitor || a._servingVisitor !== this) {
+            this.assignedAgent = null;
+            this.state = 'seated_waiting';
+            this.needsAgent = true;
+            break;
+          }
+          // Agent arrived? Check if in same room or close enough
+          if (this.targetRoom) {
+            const r = this.targetRoom;
+            const inRoom = a.x >= r.x && a.x < r.x + r.w && a.y >= r.y && a.y < r.y + r.h;
+            if (inRoom && (a.state === 'idle' || a.state === 'working')) {
+              this.startConversation(a);
+            }
+          } else {
+            // No target room — just check proximity
+            if (Math.abs(a.x - this.x) < 3 && Math.abs(a.y - this.y) < 3
+              && (a.state === 'idle' || a.state === 'working')) {
+              this.startConversation(a);
+            }
+          }
+        }
+        if (this.patience <= 0) {
+          this.satisfaction -= 0.15;
+          this.leave(false);
+        }
+        break;
+
+      case 'in_conversation':
+        this.conversationTimer += dt;
+        this._tickDialogue(dt);
+        break;
+
+      case 'wrapping_up':
+        this.stateTimer += dt;
+        if (this.stateTimer >= 30) {
           this.leave(this.satisfaction > 0.5);
         }
         break;
@@ -208,11 +395,41 @@ export class Visitor {
         if (this.path.length === 0 || this.pathIdx >= this.path.length) {
           this.browseRoomsVisited++;
           if (this.browseRoomsVisited >= 3 || this.stateTimer > 400) {
-            // Done browsing, leave
             this.leave(this.satisfaction > 0.4);
           } else {
-            // Pick a random room to visit
-            this._browseNextRoom();
+            // Sit briefly in a chair if available
+            const rooms = getRoomInstances().filter(r => r.constructionProgress >= 1);
+            const room = rooms.length > 0 ? pick(rooms) : null;
+            if (room) {
+              const chair = findAvailableChair(room);
+              if (chair && Math.random() < 0.4) {
+                this.claimedChair = chair;
+                claimChair(chair);
+                this.targetRoom = room;
+                this.moveTo(chair.x, chair.y);
+                // Will release after arriving and sitting briefly
+                this._browseSitTimer = 60 + Math.random() * 60;
+              } else {
+                this._browseNextRoom();
+              }
+            } else {
+              this._browseNextRoom();
+            }
+          }
+        }
+        // Handle brief sitting during browsing
+        if (this.claimedChair && this._browseSitTimer !== undefined) {
+          if (this.path.length === 0 || this.pathIdx >= this.path.length) {
+            this.seated = true;
+            this._browseSitTimer -= dt;
+            if (this._browseSitTimer <= 0) {
+              this.seated = false;
+              releaseChair(this.claimedChair);
+              this.claimedChair = null;
+              this.targetRoom = null;
+              delete this._browseSitTimer;
+              this._browseNextRoom();
+            }
           }
         }
         break;
@@ -229,13 +446,42 @@ export class Visitor {
     }
   }
 
+  _tickDialogue(dt) {
+    if (!this._dialogueSeq || this.conversationStep >= this._dialogueSeq.length) {
+      // Conversation done
+      this.state = 'wrapping_up';
+      this.stateTimer = 0;
+      this.seated = false;
+      this.say(pick(['Goodbye!', 'Thanks for your time!', 'See you soon!']), 60);
+      return;
+    }
+
+    this._linePause -= dt;
+    if (this._linePause > 0) return;
+
+    const line = this._dialogueSeq[this.conversationStep];
+    const [speaker, text, pause] = line;
+
+    if (speaker === 'visitor') {
+      this.say(text, pause + 10);
+    } else if (speaker === 'agent' && this.assignedAgent) {
+      this.assignedAgent.say(text, pause + 10);
+    }
+
+    this._linePause = pause;
+    this.conversationStep++;
+  }
+
   _navigateToTarget() {
-    if (this.type === 'walkin') {
-      this._browseNextRoom();
-    } else if (this.targetRoomType) {
-      if (!this.moveToRoom(this.targetRoomType)) {
-        // Target room doesn't exist, wait in lobby
-        this.state = 'waiting';
+    if (this.targetRoomType) {
+      const room = findRoomByType(this.targetRoomType);
+      if (room) {
+        this._moveToRoomDoor(room);
+      } else {
+        // Target room doesn't exist, request agent in lobby
+        this.state = 'seated_waiting';
+        this.needsAgent = true;
+        this.requestedRole = this.type === 'client' ? 'sales' : this.type === 'candidate' ? 'hr' : null;
       }
     }
   }
@@ -247,7 +493,6 @@ export class Visitor {
     const walkable = getWalkable();
     const cx = room.x + Math.floor(room.w / 2);
     const cy = room.y + Math.floor(room.h / 2);
-    // Try near center
     for (let r = 0; r <= 2; r++) {
       for (let dy = -r; dy <= r; dy++) {
         for (let dx = -r; dx <= r; dx++) {

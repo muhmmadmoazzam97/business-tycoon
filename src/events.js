@@ -654,8 +654,8 @@ function getValuationForEvent() {
 }
 
 // Calculate CEO net worth: valuation × CEO ownership %
-export function getCeoNetWorth() {
-  const val = getValuationForEvent();
+export function getCeoNetWorth(valuation) {
+  const val = valuation ?? getValuationForEvent();
   return Math.round(val * G.capTable.ceo / 100);
 }
 

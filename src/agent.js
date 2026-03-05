@@ -67,6 +67,9 @@ export class Agent {
     this.raiseDeadline = 0; // game day when raise must be given
     this._skillCapNotified = false; // track if we showed the cap speech
 
+    // Visitor service
+    this._servingVisitor = null;
+
     // Speech bubble
     this.speech = null;
     this.speechTimer = 0;

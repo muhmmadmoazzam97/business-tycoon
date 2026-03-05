@@ -38,6 +38,11 @@
 <!-- Favicon -->
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#e07030">
+
 <!-- Theme color (matches game accent) -->
 <meta name="theme-color" content="#e07030">
 <style>
@@ -1187,5 +1192,6 @@
 </style>
 
 <script type="module" src="./src/main.js"></script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');</script>
 </body>
 </html>

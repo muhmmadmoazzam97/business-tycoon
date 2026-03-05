@@ -231,7 +231,10 @@ export function drawVisitor(v) {
   const cx = s.x, cy = s.y + v.bobY * zoom;
   const z = zoom;
   const color = VISITOR_COLORS[v.type] || '#8888';
-  const isWalking = v.state === 'walking' || v.state === 'entering' || v.state === 'leaving' || v.state === 'browsing';
+  const isWalking = v.state === 'entering' || v.state === 'walking_to_door'
+    || v.state === 'entering_room' || v.state === 'leaving' || v.state === 'browsing';
+  const isSeated = v.seated;
+  const seatOffset = isSeated ? 4 * z : 0;
 
   // Shadow
   ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -240,61 +243,67 @@ export function drawVisitor(v) {
   const legAnim = isWalking ? Math.sin(v.frame * 0.5) * 3 * z : 0;
   const armAnim = isWalking ? Math.sin(v.frame * 0.5 + Math.PI) * 2 * z : 0;
 
-  // Legs
+  // Legs (shortened when seated)
   ctx.fillStyle = '#3a3540';
-  ctx.fillRect(cx - 4*z, cy - 6*z, 3*z, 7*z + legAnim);
-  ctx.fillRect(cx + 1*z, cy - 6*z, 3*z, 7*z - legAnim);
+  if (isSeated) {
+    ctx.fillRect(cx - 4*z, cy - 6*z + seatOffset, 3*z, 3*z);
+    ctx.fillRect(cx + 1*z, cy - 6*z + seatOffset, 3*z, 3*z);
+  } else {
+    ctx.fillRect(cx - 4*z, cy - 6*z, 3*z, 7*z + legAnim);
+    ctx.fillRect(cx + 1*z, cy - 6*z, 3*z, 7*z - legAnim);
+  }
 
-  // Body (neutral suit tone)
-  const bodyGrad = ctx.createLinearGradient(cx - 6*z, cy - 18*z, cx + 6*z, cy - 6*z);
+  // Body (shifted down when seated)
+  const bodyGrad = ctx.createLinearGradient(cx - 6*z, cy - 18*z + seatOffset, cx + 6*z, cy - 6*z + seatOffset);
   bodyGrad.addColorStop(0, color);
   bodyGrad.addColorStop(1, shadeColor(color, -15));
   ctx.fillStyle = bodyGrad;
-  ctx.fillRect(cx - 6*z, cy - 18*z, 12*z, 13*z);
+  ctx.fillRect(cx - 6*z, cy - 18*z + seatOffset, 12*z, 13*z);
 
   // Arms
   ctx.fillStyle = color;
-  ctx.fillRect(cx - 9*z, cy - 16*z + armAnim, 4*z, 9*z);
-  ctx.fillRect(cx + 5*z, cy - 16*z - armAnim, 4*z, 9*z);
+  ctx.fillRect(cx - 9*z, cy - 16*z + seatOffset + armAnim, 4*z, 9*z);
+  ctx.fillRect(cx + 5*z, cy - 16*z + seatOffset - armAnim, 4*z, 9*z);
 
   // Hands
   ctx.fillStyle = v.skinTone;
-  ctx.fillRect(cx - 9*z, cy - 7*z + armAnim, 3*z, 3*z);
-  ctx.fillRect(cx + 6*z, cy - 7*z - armAnim, 3*z, 3*z);
+  ctx.fillRect(cx - 9*z, cy - 7*z + seatOffset + armAnim, 3*z, 3*z);
+  ctx.fillRect(cx + 6*z, cy - 7*z + seatOffset - armAnim, 3*z, 3*z);
 
   // Head
   ctx.fillStyle = v.skinTone;
-  ctx.beginPath(); ctx.arc(cx, cy - 23*z, 6*z, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, cy - 23*z + seatOffset, 6*z, 0, Math.PI*2); ctx.fill();
 
   // Hair
   ctx.fillStyle = v.hairColor;
   if (v.hairStyle === 0) {
-    ctx.beginPath(); ctx.arc(cx, cy - 25*z, 6*z, -Math.PI, 0); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy - 25*z + seatOffset, 6*z, -Math.PI, 0); ctx.fill();
   } else if (v.hairStyle === 1) {
-    ctx.beginPath(); ctx.arc(cx, cy - 25*z, 6.5*z, -Math.PI, 0.2); ctx.fill();
-    ctx.fillRect(cx + 4*z, cy - 26*z, 2*z, 5*z);
+    ctx.beginPath(); ctx.arc(cx, cy - 25*z + seatOffset, 6.5*z, -Math.PI, 0.2); ctx.fill();
+    ctx.fillRect(cx + 4*z, cy - 26*z + seatOffset, 2*z, 5*z);
   } else {
-    ctx.beginPath(); ctx.arc(cx, cy - 24*z, 7*z, -Math.PI * 0.9, Math.PI * 0.1); ctx.fill();
-    ctx.fillRect(cx - 6*z, cy - 24*z, 2*z, 6*z);
-    ctx.fillRect(cx + 4*z, cy - 24*z, 2*z, 6*z);
+    ctx.beginPath(); ctx.arc(cx, cy - 24*z + seatOffset, 7*z, -Math.PI * 0.9, Math.PI * 0.1); ctx.fill();
+    ctx.fillRect(cx - 6*z, cy - 24*z + seatOffset, 2*z, 6*z);
+    ctx.fillRect(cx + 4*z, cy - 24*z + seatOffset, 2*z, 6*z);
   }
 
   // Eyes
   const eyeOff = (v.dir === 1 || v.dir === 2 ? 1 : -1) * z;
   ctx.fillStyle = '#fff';
-  ctx.fillRect(cx - 3*z + eyeOff, cy - 24*z, 2*z, 2*z);
-  ctx.fillRect(cx + 1*z + eyeOff, cy - 24*z, 2*z, 2*z);
+  ctx.fillRect(cx - 3*z + eyeOff, cy - 24*z + seatOffset, 2*z, 2*z);
+  ctx.fillRect(cx + 1*z + eyeOff, cy - 24*z + seatOffset, 2*z, 2*z);
   ctx.fillStyle = '#222';
-  ctx.fillRect(cx - 2*z + eyeOff, cy - 24*z, 1*z, 2*z);
-  ctx.fillRect(cx + 2*z + eyeOff, cy - 24*z, 1*z, 2*z);
+  ctx.fillRect(cx - 2*z + eyeOff, cy - 24*z + seatOffset, 1*z, 2*z);
+  ctx.fillRect(cx + 2*z + eyeOff, cy - 24*z + seatOffset, 1*z, 2*z);
 
   // Type icon above head
   ctx.font = `${8*z}px system-ui`;
   ctx.textAlign = 'center';
-  ctx.fillText(VISITOR_ICONS[v.type] || '?', cx, cy - 33*z);
+  ctx.fillText(VISITOR_ICONS[v.type] || '?', cx, cy - 33*z + seatOffset);
 
-  // Patience bar (only when waiting)
-  if (v.state === 'waiting' && v.patience < 0.95) {
+  // Patience bar (visible during waiting-like states)
+  const showPatience = v.state === 'seated_waiting' || v.state === 'queuing_outside' || v.state === 'agent_arriving';
+  if (showPatience && v.patience < 0.95) {
     const barW = 16 * z;
     const barH = 2.5 * z;
     const bx = cx - barW / 2;
@@ -319,7 +328,7 @@ export function drawVisitor(v) {
 
   // Speech bubble
   if (v.speech && v.speechTimer > 0) {
-    drawSpeechBubble(ctx, cx, cy - 40*z, v.speech, z, v.speechTimer);
+    drawSpeechBubble(ctx, cx, cy - 40*z + seatOffset, v.speech, z, v.speechTimer);
   }
 }
 

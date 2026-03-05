@@ -783,6 +783,81 @@ export const SPEECH_RAISE = ['I need a raise...', 'I\'m underpaid for my skills'
 export const SPEECH_QUIT = ['I quit! Not valued here.', 'Time to move on.', 'Found a better offer.', 'Good luck without me!'];
 export const SPEECH_SKILL_CAP = ['I\'ve peaked...', 'Need new challenges', 'Hit my ceiling here', 'Not growing anymore'];
 
+// ─── Visitor Dialogue System ────────────────────────────
+export const VISITOR_ARRIVAL_SPEECH = {
+  client:    ['Here for a meeting.', 'We need your services.', 'Let\'s talk business!', 'Is anyone available?'],
+  candidate: ['I\'m here for the interview.', 'I have an appointment.', 'Excited to be here!', 'Reporting for interview.'],
+  walkin:    ['Just passing by!', 'Nice office!', 'Love what you\'ve done here.', 'Mind if I look around?'],
+};
+
+export const VISITOR_QUEUE_SPEECH = {
+  client:    ['I\'ll wait...', 'Room\'s busy, huh?', 'Guess I\'m next.'],
+  candidate: ['Still waiting...', 'Nervous...', 'Hope it\'s soon.'],
+  walkin:    ['I\'ll come back.', 'Seems busy.', 'No rush.'],
+};
+
+export const VISITOR_DIALOGUES = {
+  client: [
+    [
+      ['visitor', 'We need help with our project.', 45],
+      ['agent', 'Tell me about the scope.', 40],
+      ['visitor', 'It\'s a 3-month engagement.', 40],
+      ['agent', 'Budget range?', 35],
+      ['visitor', 'We\'re flexible for quality.', 40],
+      ['agent', 'We can make that work! 📋', 45],
+    ],
+    [
+      ['visitor', 'Our competitor just launched...', 45],
+      ['agent', 'We\'ll help you stay ahead.', 40],
+      ['visitor', 'What\'s your timeline?', 35],
+      ['agent', 'We can start this week.', 40],
+      ['visitor', 'Sounds perfect.', 35],
+      ['agent', 'Let me draft a proposal. ✍️', 45],
+    ],
+    [
+      ['visitor', 'We heard great things!', 40],
+      ['agent', 'Thanks! What do you need?', 40],
+      ['visitor', 'Full service package.', 35],
+      ['agent', 'Our specialty. 💼', 40],
+      ['visitor', 'When can we kick off?', 35],
+      ['agent', 'I\'ll get you scheduled!', 40],
+    ],
+  ],
+  candidate: [
+    [
+      ['agent', 'Welcome! Tell me about yourself.', 45],
+      ['visitor', 'I have 5 years experience.', 40],
+      ['agent', 'What draws you here?', 40],
+      ['visitor', 'The culture and growth.', 40],
+      ['agent', 'Great fit! Let me check next steps.', 45],
+      ['visitor', 'Thank you! 🤞', 40],
+    ],
+    [
+      ['agent', 'Thanks for coming in!', 40],
+      ['visitor', 'Happy to be here.', 35],
+      ['agent', 'Walk me through your resume.', 45],
+      ['visitor', 'I led a team of 10...', 45],
+      ['agent', 'Impressive background!', 40],
+      ['visitor', 'When will I hear back?', 35],
+      ['agent', 'Within the week. 📞', 40],
+    ],
+  ],
+  walkin: [
+    [
+      ['visitor', 'Cool workspace!', 35],
+      ['agent', 'Thanks! Want a tour?', 35],
+      ['visitor', 'Sure!', 30],
+      ['agent', 'This is where the magic happens. ✨', 40],
+    ],
+    [
+      ['visitor', 'Do you have a card?', 35],
+      ['agent', 'Here you go! 🪪', 35],
+      ['visitor', 'I might have a project soon.', 40],
+      ['agent', 'We\'d love to help!', 35],
+    ],
+  ],
+};
+
 // ─── IQ Labels ──────────────────────────────────────────
 export const IQ_LABELS = [
   { min: 0,    max: 0.7,  label: 'Slow',      emoji: '🧠' },

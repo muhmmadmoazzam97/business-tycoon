@@ -189,7 +189,7 @@ function showGameOverOverlay() {
   const companyDef = COMPANY_TYPES[G.companyType] || { name: 'Company', icon: '🏢' };
   const growthModel = GROWTH_MODELS[G.companyType] || { model: 'linear', label: 'Linear' };
   const valuation = calculateValuation();
-  const ceoNetWorth = getCeoNetWorth();
+  const ceoNetWorth = getCeoNetWorth(valuation);
   const ceoStake = G.capTable.ceo;
   const investorStake = G.capTable.investors;
   const esopStake = G.capTable.esop;
@@ -426,11 +426,21 @@ function showGameOverOverlay() {
         ${isWin ? getValuationLesson(growthModel.model, ceoStake, roiMultiple) : getBankruptLesson()}
       </div>
 
-      <button class="go-restart" id="restart-btn">Play Again</button>
+      ${isWin ? `<button class="go-restart" id="keep-playing-btn" style="background:linear-gradient(135deg,#2a6b3a,#1a4a2a);margin-bottom:8px">Keep Playing</button>` : ''}
+      <button class="go-restart" id="restart-btn">${isWin ? 'Start Over' : 'Play Again'}</button>
     </div>
   `;
 
   document.body.appendChild(overlay);
+
+  if (isWin) {
+    document.getElementById('keep-playing-btn').addEventListener('click', () => {
+      overlay.remove();
+      gameOverOverlayShown = false;
+      G.gameOver = false;
+      G.gameWon = false;
+    });
+  }
 
   document.getElementById('restart-btn').addEventListener('click', () => {
     overlay.remove();
