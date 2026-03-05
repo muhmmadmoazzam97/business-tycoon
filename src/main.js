@@ -137,6 +137,20 @@ if (pickerGrid) {
   }
 }
 
+// ─── Mission Modal (shown first as welcome) ──────────────────────────────────
+const missionModal = document.getElementById('mission-modal');
+const missionBtn = document.getElementById('mission-start-btn');
+if (missionBtn) {
+  missionBtn.addEventListener('click', () => {
+    resumeAudioCtx();
+    sfxClick();
+    // Hide welcome, show company picker
+    missionModal.style.display = 'none';
+    pickerModal.style.display = 'flex';
+  });
+}
+
+// ─── Company Picker (shown after welcome) ─────────────────────────────────
 if (pickerBtn) {
   pickerBtn.addEventListener('click', () => {
     if (!selectedCompanyType) return;
@@ -148,29 +162,8 @@ if (pickerBtn) {
     const companyDef = COMPANY_TYPES[selectedCompanyType];
     G.unlockedRooms = new Set(companyDef.startUnlocked);
 
-    // Update mission modal with company-specific text
-    const missionIcon = document.getElementById('mission-icon');
-    const missionSubtitle = document.getElementById('mission-subtitle');
-    const missionDesc = document.getElementById('mission-desc');
-    if (missionIcon) missionIcon.textContent = companyDef.icon;
-    if (missionSubtitle) missionSubtitle.textContent = `${companyDef.name} — Director Briefing`;
-    if (missionDesc) missionDesc.innerHTML = `You've received <strong style="color: #50c878">$10,000</strong> in seed funding.<br>Build your <strong>${companyDef.name.toLowerCase()}</strong> from scratch.`;
-
-    // Hide picker, show mission modal
+    // Hide picker, start game
     pickerModal.style.display = 'none';
-    const missionModal = document.getElementById('mission-modal');
-    if (missionModal) missionModal.style.display = 'flex';
-  });
-}
-
-// ─── Mission Modal ──────────────────────────────────────
-const missionModal = document.getElementById('mission-modal');
-const missionBtn = document.getElementById('mission-start-btn');
-if (missionBtn) {
-  missionBtn.addEventListener('click', () => {
-    resumeAudioCtx();
-    sfxClick();
-    missionModal.style.display = 'none';
     G.gameSpeed = 1;
     G.missionDismissed = true;
     trackEvent('game-start', { company: G.companyType });
@@ -178,16 +171,27 @@ if (missionBtn) {
     // Spawn CEO
     const ceoLp = getActivePlan()?.lobbyPos || { x: 10, y: 18 };
     const ceo = new Agent('ceo', ceoLp.x + 2, ceoLp.y + 1);
-    ceo.name = 'You';
+    ceo.name = startWithAiCeo ? 'AI CEO' : 'You';
     ceo.mood = 0.9;
     ceo.skill = 0.5;
     ceo.alignment = 1.0; // CEO always knows the vision
     G.agents.push(ceo);
     G.ceo = ceo;
 
+    if (startWithAiCeo) {
+      G.gameSpeed = 2;
+      enableAiCeo();
+      if (aiCeoBtn) {
+        aiCeoBtn.style.background = 'linear-gradient(135deg, rgba(60,120,200,0.3), rgba(40,80,160,0.4))';
+        aiCeoBtn.style.color = '#80c0ff';
+        aiCeoBtn.style.borderColor = 'rgba(100,180,255,0.4)';
+      }
+    }
+
     // Update speed button states
+    const activeSpeed = startWithAiCeo ? '2' : '1';
     document.querySelectorAll('.speed-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.speed === '1');
+      b.classList.toggle('active', b.dataset.speed === activeSpeed);
     });
   });
 }
@@ -433,39 +437,16 @@ if (aiCeoBtn) {
 }
 
 // ─── AI CEO button in mission modal ────────────────────
+let startWithAiCeo = false;
 const missionAiBtn = document.getElementById('mission-ai-btn');
 if (missionAiBtn) {
   missionAiBtn.addEventListener('click', () => {
     resumeAudioCtx();
     sfxClick();
+    startWithAiCeo = true;
+    // Hide welcome, show company picker
     missionModal.style.display = 'none';
-    G.gameSpeed = 2;
-    G.missionDismissed = true;
-
-    // Spawn CEO
-    const ceoLp = getActivePlan()?.lobbyPos || { x: 10, y: 18 };
-    const ceo = new Agent('ceo', ceoLp.x + 2, ceoLp.y + 1);
-    ceo.name = 'AI CEO';
-    ceo.mood = 0.9;
-    ceo.skill = 0.5;
-    ceo.alignment = 1.0;
-    G.agents.push(ceo);
-    G.ceo = ceo;
-
-    // Enable AI CEO
-    enableAiCeo();
-
-    // Update HUD button state
-    if (aiCeoBtn) {
-      aiCeoBtn.style.background = 'linear-gradient(135deg, rgba(60,120,200,0.3), rgba(40,80,160,0.4))';
-      aiCeoBtn.style.color = '#80c0ff';
-      aiCeoBtn.style.borderColor = 'rgba(100,180,255,0.4)';
-    }
-
-    // Update speed button states
-    document.querySelectorAll('.speed-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.speed === '2');
-    });
+    pickerModal.style.display = 'flex';
   });
 }
 
