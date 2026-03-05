@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v0.3';
+const CACHE_VERSION = 'v0.7';
 
 const PRECACHE_URLS = [
   './',
