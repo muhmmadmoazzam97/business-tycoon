@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'business-tycoon-v3';
+const CACHE_VERSION = 'v0.3';
 
 const PRECACHE_URLS = [
   './',
